@@ -1,0 +1,22 @@
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+
+# XcodeGen
+FiveMore.xcodeproj/
+
+# macOS
+.DS_Store
+
+
+# Local build output
+.derived/
+.derived-device/
+
+# Local agent state
+.claude/memory/
+
+# Failed UI-test debris
+docs/ui-test-artifacts-failed/

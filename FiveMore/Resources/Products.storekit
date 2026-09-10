@@ -1,0 +1,46 @@
+{
+  "identifier" : "C2517088-6E94-4D84-B1E2-741B93B344C5",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : true,
+      "internalID" : "07AEAC7C-BBF7-4D6D-A6A5-FE68340B0B9A",
+      "localizations" : [
+        {
+          "description" : "Capture unlimited 5 More moments with one purchase.",
+          "displayName" : "Lifetime Unlock",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "한 번의 결제로 5 More 순간을 제한 없이 기록하세요.",
+          "displayName" : "평생 이용권",
+          "locale" : "ko"
+        }
+      ],
+      "productID" : "com.fivemore.app.fullunlock",
+      "referenceName" : "5 More Lifetime Unlock",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "1234567890",
+    "_developerTeamID" : "",
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
+
