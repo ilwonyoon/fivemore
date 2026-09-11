@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "25170429-17CF-4D0C-A6CE-73AA826445CB",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "B46603BF-4C65-41A1-94AB-A1D5B33DD165.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "03-timer_0_02AD2937-BE76-4453-8B34-8881E57F90C6.png",
+        "timestamp" : 1789138250.289
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "25170429-17CF-4D0C-A6CE-73AA826445CB",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "6F11AD51-923F-41F2-B680-140DF963624A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "02-camera_0_0249D25A-8D78-40C5-B9B5-13DA28E43F1E.png",
+        "timestamp" : 1789138245.535
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "25170429-17CF-4D0C-A6CE-73AA826445CB",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "55F0DD81-2DEA-4FA9-82AF-D11587C2AF18.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "01-home_0_763DB254-F10A-4522-9B60-C3E760774E9A.png",
+        "timestamp" : 1789138243.878
+      }
+    ],
+    "testIdentifier" : "CoreFlowUITests/testHomeToCameraToTimerKeepsTheCoreFlowUsable()",
+    "testIdentifierURL" : "test://com.apple.xcode/FiveMore/FiveMoreUITests/CoreFlowUITests/testHomeToCameraToTimerKeepsTheCoreFlowUsable"
+  }
+]

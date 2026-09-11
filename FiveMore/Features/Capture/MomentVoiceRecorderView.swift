@@ -16,35 +16,43 @@ struct MomentVoiceRecorderView: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                PaperBackground()
-                VStack(spacing: Spacing.section) {
-                    Image("SymbolFiveHand")
-                        .resizable().scaledToFit().frame(width: 88, height: 88)
-                    Text("Our 5-second cheer")
-                        .font(SRTypography.displayTitle)
-                        .foregroundStyle(SRColor.charcoal)
-                    Text("A tiny “five is up!” becomes part of this moment.")
-                        .font(.callout).foregroundStyle(SRColor.muted)
-                        .multilineTextAlignment(.center)
-
-                    controls
-
-                    if let errorMessage {
-                        Text(errorMessage).font(.caption).foregroundStyle(SRColor.orange)
-                            .multilineTextAlignment(.center)
+        ZStack {
+            PaperBackground()
+            VStack(spacing: 18) {
+                HStack {
+                    HStack(spacing: 8) {
+                        Image("SymbolFiveHand")
+                            .resizable().scaledToFit().frame(width: 34, height: 34)
+                        Text("Our cheer")
+                            .font(.custom("Noteworthy-Bold", size: 25, relativeTo: .title3))
+                            .foregroundStyle(SRColor.charcoal)
                     }
                     Spacer()
+                    Button { dismiss() } label: {
+                        CrayonControlMark(kind: .close, color: SRColor.charcoal)
+                            .frame(width: 20, height: 20)
+                            .frame(width: 40, height: 40)
+                    }
+                    .accessibilityLabel("Close")
                 }
-                .padding(Spacing.section)
-            }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Not now") { dismiss() }.foregroundStyle(SRColor.orange)
+
+                Text("Make this moment yours.")
+                    .font(.callout)
+                    .foregroundStyle(SRColor.muted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                controls
+
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.caption)
+                        .foregroundStyle(SRColor.orange)
+                        .multilineTextAlignment(.center)
                 }
             }
+            .padding(24)
         }
+        .frame(minWidth: 300, idealWidth: 340, minHeight: 300, idealHeight: 360)
         .onDisappear {
             player?.stop()
             stopRecording(keep: false)
@@ -54,11 +62,12 @@ struct MomentVoiceRecorderView: View {
     @ViewBuilder private var controls: some View {
         if recorder != nil {
             VStack(spacing: Spacing.margin) {
-                Text("\(Int(elapsed))s")
-                    .font(.system(size: 54, weight: .black, design: .rounded))
+                Text("\(Int(elapsed)) / 5s")
+                    .font(.system(size: 42, weight: .black, design: .rounded))
                     .monospacedDigit().foregroundStyle(SRColor.charcoal)
                 Button("Stop recording") { stopRecording(keep: true) }
-                    .buttonStyle(.borderedProminent).tint(SRColor.orange).foregroundStyle(.white)
+                    .buttonStyle(.borderedProminent).tint(SRColor.orange)
+                    .foregroundStyle(.white)
             }
         } else if let previewURL {
             VStack(spacing: 12) {
@@ -76,11 +85,23 @@ struct MomentVoiceRecorderView: View {
                         .frame(maxWidth: .infinity, minHeight: 50)
                 }
                 .buttonStyle(.borderedProminent).tint(SRColor.yellow).foregroundStyle(SRColor.charcoal)
-                Button("Record again", role: .destructive) { self.previewURL = nil }
+                Button("Record again") { self.previewURL = nil }
+                    .foregroundStyle(SRColor.orange)
             }
         } else {
-            Button("Start recording") { Task { await startRecording() } }
-                .buttonStyle(.borderedProminent).tint(SRColor.orange).foregroundStyle(.white)
+            Button {
+                Task { await startRecording() }
+            } label: {
+                HStack(spacing: 10) {
+                    CrayonControlMark(kind: .circle, color: .white)
+                        .frame(width: 24, height: 24)
+                    Text("Start recording")
+                }
+                .frame(maxWidth: .infinity, minHeight: 58)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(SRColor.orange)
+            .foregroundStyle(.white)
         }
     }
 

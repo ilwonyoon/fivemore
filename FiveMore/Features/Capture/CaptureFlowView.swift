@@ -3,6 +3,8 @@ import SwiftUI
 import UIKit
 
 struct CaptureFlowView: View {
+    var onOpenMemories: () -> Void = {}
+
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var purchaseService: PurchaseService
@@ -45,10 +47,12 @@ struct CaptureFlowView: View {
 
                 GeometryReader { proxy in
                     // Measured from the reference images: 16pt side margin and a
-                    // portrait frame at a 0.915 ratio, identical in every phase.
+                    // portrait 3:4 frame, identical in every phase.
                     let fullWidth = max(1, min(proxy.size.width - Spacing.margin * 2, 390))
-                    let frameHeight = min(fullWidth / 0.915, proxy.size.height * 0.52)
-                    let frameWidth = frameHeight * 0.915
+                    // Portrait 4:3 camera/photo composition: the longer frame
+                    // gives the captured moment more breathing room vertically.
+                    let frameWidth = min(fullWidth, proxy.size.height * 0.42)
+                    let frameHeight = frameWidth / 0.75
 
                     VStack(spacing: 0) {
                         header
@@ -60,6 +64,7 @@ struct CaptureFlowView: View {
                                 .clipped()
                         }
                         .frame(width: frameWidth, height: frameHeight)
+                        .padding(.top, phase == .camera ? 10 : 0)
 
                         Spacer(minLength: Spacing.zone)
 
@@ -98,11 +103,12 @@ struct CaptureFlowView: View {
             )
             .environmentObject(purchaseService)
         }
-        .sheet(isPresented: $showMomentVoiceRecorder) {
+        .popover(isPresented: $showMomentVoiceRecorder, attachmentAnchor: .rect(.bounds), arrowEdge: .bottom) {
             if let activeMomentID {
                 MomentVoiceRecorderView(momentID: activeMomentID) { fileName, duration, bytes in
                     saveMomentVoice(fileName: fileName, duration: duration, bytes: bytes)
                 }
+                .presentationCompactAdaptation(.popover)
             }
         }
         .alert("Couldn’t continue", isPresented: errorIsPresented) {
@@ -197,6 +203,18 @@ struct CaptureFlowView: View {
 
             if phase == .home {
                 Button {
+                    onOpenMemories()
+                } label: {
+                    Image("IconMemories")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 22, height: 22)
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("Memories")
+
+                Button {
                     showSettings = true
                 } label: {
                     Image("IconSettings")
@@ -220,8 +238,17 @@ struct CaptureFlowView: View {
                 .transition(.opacity)
 
         case .camera:
-            CameraPreview(session: cameraService.session)
-                .transition(.opacity)
+            ZStack(alignment: .bottom) {
+                CameraPreview(session: cameraService.session)
+                    .transition(.opacity)
+
+                AutoCaptureGuide(
+                    progress: cameraService.detectionProgress,
+                    isReady: cameraService.stableFingerCount == CaptureRules.defaultMinutes,
+                    isCapturing: isCapturing
+                )
+                .padding(12)
+            }
 
         case .timer, .completion:
             if let capturedImage {
@@ -257,10 +284,6 @@ struct CaptureFlowView: View {
                     Task { await beginCamera() }
                 }
 
-                Text("Take a photo to start")
-                    .font(SRTypography.action)
-                    .foregroundStyle(SRColor.charcoal)
-
                 if !purchaseService.isUnlocked {
                     Text(freeUsesText)
                         .font(.caption)
@@ -275,17 +298,6 @@ struct CaptureFlowView: View {
                     activeMinutes = CaptureRules.defaultMinutes
                     Task { await captureAndStartTimer() }
                 }
-
-                AutoCaptureGuide(
-                    progress: cameraService.detectionProgress,
-                    isReady: cameraService.stableFingerCount == CaptureRules.defaultMinutes,
-                    isCapturing: isCapturing
-                )
-
-                Text(cameraGuidanceText)
-                    .font(SRTypography.action)
-                    .foregroundStyle(SRColor.charcoal)
-                    .multilineTextAlignment(.center)
             }
 
         case .timer:
@@ -317,11 +329,21 @@ struct CaptureFlowView: View {
                     Button {
                         showMomentVoiceRecorder = true
                     } label: {
-                        Text(activeMomentHasVoice ? "Our cheer is saved" : "Make our 5-second cheer")
-                            .font(.system(.subheadline, design: .rounded, weight: .bold))
+                        HStack(spacing: 10) {
+                            Image("SymbolFiveHand")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 30, height: 30)
+                            Text(activeMomentHasVoice ? "Cheer saved · record again" : "Add a 5-second cheer")
+                                .font(.system(.subheadline, design: .rounded, weight: .bold))
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 62)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .tint(SRColor.orange)
                     .foregroundStyle(SRColor.orange)
+                    .accessibilityLabel(activeMomentHasVoice ? "Record this moment's cheer again" : "Add a five-second cheer to this moment")
                 }
             }
 
@@ -398,24 +420,6 @@ struct CaptureFlowView: View {
             return false
         }
         return FileManager.default.fileExists(atPath: MomentVoiceStore.url(for: fileName).path)
-    }
-
-    /// Tells the parent what the camera is seeing, so the automatic shutter
-    /// never feels like it fired on its own.
-    private var cameraGuidanceText: String {
-        if isCapturing {
-            return "Saving your moment…"
-        }
-
-        if cameraService.stableFingerCount == CaptureRules.defaultMinutes {
-            return "Got it — taking the photo!"
-        }
-
-        if cameraService.latestFingerCount == CaptureRules.defaultMinutes {
-            return "Hold still — it will take itself"
-        }
-
-        return "Show an open hand, or tap the camera"
     }
 
     private var freeUsesText: String {

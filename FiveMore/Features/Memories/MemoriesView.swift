@@ -3,6 +3,8 @@ import SwiftData
 import SwiftUI
 
 struct MemoriesView: View {
+    var onOpenHome: () -> Void = {}
+
     @Query(sort: \Moment.capturedAt, order: .reverse) private var moments: [Moment]
     @State private var authorizationStatus = PhotoLibraryService.shared.readAuthorizationStatus
 
@@ -52,6 +54,20 @@ struct MemoriesView: View {
             }
             .navigationTitle("Our 5 More")
             .toolbarBackground(SRColor.paper, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        onOpenHome()
+                    } label: {
+                        Image("IconHome")
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 22, height: 22)
+                    }
+                    .accessibilityLabel("Home")
+                }
+            }
             .navigationDestination(for: Moment.self) { moment in
                 MomentPagerView(moments: moments, initialMoment: moment)
             }

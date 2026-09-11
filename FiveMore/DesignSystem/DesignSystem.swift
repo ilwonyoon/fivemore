@@ -244,12 +244,7 @@ struct PrimaryCameraButton: View {
 
     var body: some View {
         Button(action: action) {
-            ZStack {
-                Circle()
-                    .fill(SRColor.charcoal)
-                    .frame(width: 82, height: 82)
-                    .shadow(color: .black.opacity(0.16), radius: 10, y: 5)
-
+            HStack(spacing: 10) {
                 if isBusy {
                     ProgressView()
                         .tint(.white)
@@ -258,10 +253,17 @@ struct PrimaryCameraButton: View {
                         .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 44, height: 44)
+                        .frame(width: 34, height: 34)
                         .foregroundStyle(.white)
                 }
+
+                Text(isBusy ? "Saving…" : "Take a photo")
+                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .foregroundStyle(.white)
             }
+            .frame(maxWidth: .infinity, minHeight: 88)
+            .background(SRColor.charcoal, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .shadow(color: .black.opacity(0.16), radius: 10, y: 5)
         }
         .buttonStyle(.plain)
         .disabled(isBusy)
@@ -322,7 +324,7 @@ struct CrayonControlMark: View {
     }
 }
 
-/// Explains the gesture in the place parents are already looking. The ring
+/// Gives the automatic shutter a short, in-preview explanation. The ring
 /// doubles as feedback: it fills only while a full open palm remains visible.
 struct AutoCaptureGuide: View {
     let progress: Double
@@ -330,7 +332,7 @@ struct AutoCaptureGuide: View {
     let isCapturing: Bool
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             ZStack {
                 Circle()
                     .stroke(SRColor.yellow.opacity(0.28), lineWidth: 4)
@@ -343,25 +345,21 @@ struct AutoCaptureGuide: View {
                     .scaledToFit()
                     .padding(7)
             }
-            .frame(width: 52, height: 52)
+            .frame(width: 34, height: 34)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(isCapturing ? "Photo is being saved" : isReady ? "Open hand found!" : "Photo takes itself")
-                    .font(.system(.subheadline, design: .rounded, weight: .bold))
-                Text("Hold up 5 fingers until the yellow ring fills")
-                    .font(.caption)
-                    .foregroundStyle(SRColor.muted)
-            }
+            Text(isCapturing ? "Saving…" : isReady ? "Got it!" : "Show 5 fingers")
+                .font(.system(.subheadline, design: .rounded, weight: .bold))
+                .lineLimit(1)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(SRColor.card.opacity(0.92), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .padding(.horizontal, 11)
+        .padding(.vertical, 7)
+        .background(.ultraThinMaterial, in: Capsule())
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            Capsule()
                 .stroke(SRColor.yellow.opacity(0.45), lineWidth: 1.5)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Automatic photo: hold up an open hand with five fingers until the yellow ring fills.")
+        .accessibilityLabel("Automatic photo: show five fingers and hold still.")
     }
 }
 
