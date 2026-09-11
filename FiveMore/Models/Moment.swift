@@ -21,6 +21,12 @@ final class Moment {
     /// how the negotiation actually went.
     var rounds: Int = 1
 
+    /// The cheer selected when this moment was captured, retained as a small
+    /// keepsake. Existing moments simply leave this unset.
+    var alarmRecordingFileName: String?
+    var audioDurationSeconds: Double?
+    var audioByteCount: Int?
+
     var endReason: MomentEndReason? {
         get {
             endReasonRawValue.flatMap(MomentEndReason.init(rawValue:))
@@ -53,4 +59,3 @@ final class Moment {
         self.rounds = rounds
     }
 }
-

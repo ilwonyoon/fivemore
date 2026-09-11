@@ -6,6 +6,15 @@ import Testing
 /// §5.4.2 — the places where a bug charges a parent wrongly.
 struct CaptureRulesTests {
 
+    // MARK: - Automatic capture safety
+
+    @Test func onlyAStableOpenPalmCanAutoCapture() {
+        #expect(!CaptureRules.shouldAutoCapture(stableFingerCount: nil))
+        #expect(!CaptureRules.shouldAutoCapture(stableFingerCount: 1))
+        #expect(!CaptureRules.shouldAutoCapture(stableFingerCount: 3))
+        #expect(CaptureRules.shouldAutoCapture(stableFingerCount: 5))
+    }
+
     // MARK: - Free use consumption
 
     @Test func consumesAFreeUseWhenNotUnlocked() {
@@ -33,26 +42,6 @@ struct CaptureRulesTests {
 
     @Test func blocksCameraWhenExhaustedAndNotUnlocked() {
         #expect(!CaptureRules.canOpenCamera(freeUsesRemaining: 0, isUnlocked: false))
-    }
-
-    // MARK: - Timer length from fingers
-
-    @Test func usesTheLiveReadingWhenAvailable() {
-        // Pressing the shutter before the reading settles still counts fingers.
-        #expect(CaptureRules.minutes(liveFingerCount: 7, stableFingerCount: 5) == 7)
-    }
-
-    @Test func fallsBackToTheStableReading() {
-        #expect(CaptureRules.minutes(liveFingerCount: nil, stableFingerCount: 10) == 10)
-    }
-
-    @Test func fallsBackToFiveWithNoHand() {
-        #expect(CaptureRules.minutes(liveFingerCount: nil, stableFingerCount: nil) == 5)
-    }
-
-    @Test func treatsZeroFingersAsNoHand() {
-        // A closed fist must not start a zero minute timer.
-        #expect(CaptureRules.minutes(liveFingerCount: 0, stableFingerCount: nil) == 5)
     }
 
     // MARK: - Restore
@@ -106,4 +95,5 @@ struct CaptureRulesTests {
         let now = started.addingTimeInterval(600)
         #expect(CaptureRules.restoredPhase(for: record, now: now) == .completion)
     }
+
 }

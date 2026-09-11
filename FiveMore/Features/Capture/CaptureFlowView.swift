@@ -5,7 +5,6 @@ import UIKit
 struct CaptureFlowView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @EnvironmentObject private var purchaseService: PurchaseService
     @Query(sort: \Moment.capturedAt, order: .reverse) private var moments: [Moment]
 
@@ -18,11 +17,11 @@ struct CaptureFlowView: View {
     @State private var endsAt: Date?
     @State private var now = Date.now
     @State private var isCapturing = false
-    @State private var flashOpacity: Double = 0
     @State private var shutterTick = 0
     @State private var fingerTick = 0
     @State private var showPaywall = false
     @State private var showSettings = false
+    @State private var showMomentVoiceRecorder = false
     @State private var errorMessage: String?
 
     private var launchRequest: LaunchRequest { .shared }
@@ -58,6 +57,7 @@ struct CaptureFlowView: View {
                         CrayonFrame {
                             frameContent
                                 .frame(width: frameWidth, height: frameHeight)
+                                .clipped()
                         }
                         .frame(width: frameWidth, height: frameHeight)
 
@@ -75,21 +75,13 @@ struct CaptureFlowView: View {
                     .padding(.top, Spacing.tight)
                 }
             }
-            .overlay {
-                Color.white
-                    .opacity(flashOpacity)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
-            }
             .sensoryFeedback(.impact(weight: .heavy), trigger: shutterTick)
-        .sensoryFeedback(.selection, trigger: fingerTick)
+            .sensoryFeedback(.selection, trigger: fingerTick)
         .onChange(of: cameraService.latestFingerCount) { _, newValue in
-            // A tick each time the count the camera reads actually changes, so
-            // holding up fingers feels like turning a dial.
-            guard phase == .camera, !isCapturing, let fingers = newValue, fingers > 0 else {
+            guard phase == .camera, !isCapturing, newValue == CaptureRules.defaultMinutes else {
                 return
             }
-            fingerTick = fingers
+            fingerTick += 1
         }
             .toolbar(.hidden, for: .navigationBar)
         }
@@ -101,8 +93,17 @@ struct CaptureFlowView: View {
             .environmentObject(purchaseService)
         }
         .sheet(isPresented: $showSettings) {
-            SettingsView(trialStore: trialStore)
-                .environmentObject(purchaseService)
+            SettingsView(
+                trialStore: trialStore
+            )
+            .environmentObject(purchaseService)
+        }
+        .sheet(isPresented: $showMomentVoiceRecorder) {
+            if let activeMomentID {
+                MomentVoiceRecorderView(momentID: activeMomentID) { fileName, duration, bytes in
+                    saveMomentVoice(fileName: fileName, duration: duration, bytes: bytes)
+                }
+            }
         }
         .alert("Couldn’t continue", isPresented: errorIsPresented) {
             Button("OK", role: .cancel) {}
@@ -138,18 +139,20 @@ struct CaptureFlowView: View {
             }
         }
         .onChange(of: cameraService.stableFingerCount) { _, newValue in
-            guard phase == .camera, !isCapturing, let fingers = newValue, fingers > 0 else {
+            guard phase == .camera,
+                  !isCapturing,
+                  CaptureRules.shouldAutoCapture(stableFingerCount: newValue) else {
                 return
             }
 
 #if targetEnvironment(simulator)
             if LaunchFlags.holdsCamera {
-                activeMinutes = fingers
+                activeMinutes = CaptureRules.defaultMinutes
                 return
             }
 #endif
 
-            activeMinutes = fingers
+            activeMinutes = CaptureRules.defaultMinutes
             Task { await captureAndStartTimer() }
         }
         .onChange(of: scenePhase) { _, newValue in
@@ -176,37 +179,37 @@ struct CaptureFlowView: View {
     }
 
     private var header: some View {
-        ZStack {
-            BrandWordmark()
-
-            HStack {
-                if phase == .camera {
-                    Button {
-                        cancelCamera()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 18, weight: .bold))
-                            .frame(width: 44, height: 44)
-                    }
-                    .accessibilityLabel("Close camera")
+        HStack {
+            if phase == .camera {
+                Button {
+                    cancelCamera()
+                } label: {
+                    CrayonControlMark(kind: .close, color: SRColor.charcoal)
+                        .frame(width: 20, height: 20)
+                        .frame(width: 44, height: 44)
                 }
-
-                Spacer()
-
-                if phase == .home {
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 18, weight: .semibold))
-                            .frame(width: 44, height: 44)
-                    }
-                    .accessibilityLabel("Settings")
-                }
+                .accessibilityLabel("Close camera")
+            } else {
+                CompactBrandHeader()
             }
-            .foregroundStyle(SRColor.charcoal)
+
+            Spacer()
+
+            if phase == .home {
+                Button {
+                    showSettings = true
+                } label: {
+                    Image("IconSettings")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 22, height: 22)
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("Settings")
+            }
         }
-        .frame(height: 78)
+        .frame(height: 58)
     }
 
     @ViewBuilder
@@ -231,8 +234,11 @@ struct CaptureFlowView: View {
                 ZStack {
                     SRColor.paper
                     VStack(spacing: 12) {
-                        Image(systemName: "photo")
-                            .font(.system(size: 46))
+                        Image("IconMemories")
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 46, height: 46)
                         Text("Your moment is saved in Photos")
                             .font(.callout)
                     }
@@ -252,7 +258,7 @@ struct CaptureFlowView: View {
                 }
 
                 Text("Take a photo to start")
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
+                    .font(SRTypography.action)
                     .foregroundStyle(SRColor.charcoal)
 
                 if !purchaseService.isUnlocked {
@@ -264,18 +270,22 @@ struct CaptureFlowView: View {
             }
 
         case .camera:
-            VStack(spacing: 9) {
+            VStack(spacing: 10) {
                 PrimaryCameraButton(isBusy: isCapturing) {
-                    activeMinutes = CaptureRules.minutes(
-                        liveFingerCount: cameraService.latestFingerCount,
-                        stableFingerCount: cameraService.stableFingerCount
-                    )
+                    activeMinutes = CaptureRules.defaultMinutes
                     Task { await captureAndStartTimer() }
                 }
 
+                AutoCaptureGuide(
+                    progress: cameraService.detectionProgress,
+                    isReady: cameraService.stableFingerCount == CaptureRules.defaultMinutes,
+                    isCapturing: isCapturing
+                )
+
                 Text(cameraGuidanceText)
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
+                    .font(SRTypography.action)
                     .foregroundStyle(SRColor.charcoal)
+                    .multilineTextAlignment(.center)
             }
 
         case .timer:
@@ -289,7 +299,7 @@ struct CaptureFlowView: View {
                     )
 
                     Text(Countdown.displayText(for: remainingSeconds))
-                        .font(.system(size: 58, weight: .black, design: .rounded))
+                        .font(.system(size: 54, weight: .black, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(SRColor.charcoal)
                         .contentTransition(.numericText())
@@ -302,16 +312,29 @@ struct CaptureFlowView: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(SRColor.muted)
+
+                if activeMomentID != nil {
+                    Button {
+                        showMomentVoiceRecorder = true
+                    } label: {
+                        Text(activeMomentHasVoice ? "Our cheer is saved" : "Make our 5-second cheer")
+                            .font(.system(.subheadline, design: .rounded, weight: .bold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(SRColor.orange)
+                }
             }
 
         case .completion:
             VStack(spacing: Spacing.tight) {
-                Image(systemName: "bell.and.waves.left.and.right.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(SRColor.yellow)
+                Image("SymbolCompletion")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 68, height: 68)
+                    .accessibilityHidden(true)
 
                 Text("Time’s up!")
-                    .font(.system(size: 36, weight: .black, design: .rounded))
+                    .font(SRTypography.displayTitle)
                     .foregroundStyle(SRColor.charcoal)
 
                 Text(completionSubtitle)
@@ -325,15 +348,19 @@ struct CaptureFlowView: View {
                 // repeat button gets the wider share because it is the choice
                 // the parent is most likely making.
                 HStack(spacing: Spacing.tight) {
-                    Button {
-                        repeatMoment()
-                    } label: {
-                        Text("\(activeMinutes) more minutes")
-                            .frame(maxWidth: .infinity, minHeight: completionButtonHeight)
+                    // A test moment owns no Moment record, so there is nothing
+                    // to extend — Done is the only way out.
+                    if activeMomentID != nil {
+                        Button {
+                            repeatMoment()
+                        } label: {
+                            Text("\(activeMinutes) more minutes")
+                                .frame(maxWidth: .infinity, minHeight: completionButtonHeight)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(SRColor.yellow)
+                        .foregroundStyle(SRColor.charcoal)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(SRColor.yellow)
-                    .foregroundStyle(SRColor.charcoal)
 
                     Button {
                         returnHome()
@@ -365,6 +392,14 @@ struct CaptureFlowView: View {
         return "That’s \(moment.rounds) rounds. Your moment is saved."
     }
 
+    private var activeMomentHasVoice: Bool {
+        guard let activeMomentID,
+              let fileName = moments.first(where: { $0.id == activeMomentID })?.alarmRecordingFileName else {
+            return false
+        }
+        return FileManager.default.fileExists(atPath: MomentVoiceStore.url(for: fileName).path)
+    }
+
     /// Tells the parent what the camera is seeing, so the automatic shutter
     /// never feels like it fired on its own.
     private var cameraGuidanceText: String {
@@ -372,11 +407,15 @@ struct CaptureFlowView: View {
             return "Saving your moment…"
         }
 
-        if let pending = cameraService.latestFingerCount ?? cameraService.stableFingerCount {
-            return "\(pending) more minutes…"
+        if cameraService.stableFingerCount == CaptureRules.defaultMinutes {
+            return "Got it — taking the photo!"
         }
 
-        return "Hold up fingers, or tap for 5"
+        if cameraService.latestFingerCount == CaptureRules.defaultMinutes {
+            return "Hold still — it will take itself"
+        }
+
+        return "Show an open hand, or tap the camera"
     }
 
     private var freeUsesText: String {
@@ -448,17 +487,8 @@ struct CaptureFlowView: View {
         }
     }
 
-    /// A brief white flash plus a heavy tap, so a capture that fires on its own
-    /// still reads as "the photo was taken".
-    private func showCaptureFlash() {
+    private func triggerCaptureFeedback() {
         shutterTick += 1
-
-        guard !reduceMotion else { return }
-
-        flashOpacity = 0.85
-        withAnimation(.easeOut(duration: 0.32)) {
-            flashOpacity = 0
-        }
     }
 
     private func cancelCamera() {
@@ -472,6 +502,10 @@ struct CaptureFlowView: View {
     private func captureAndStartTimer() async {
         guard !isCapturing else { return }
         isCapturing = true
+
+        // Keep only the physical tap confirming the shutter. The visual flash
+        // and timer reveal experiments are deliberately absent.
+        triggerCaptureFeedback()
 
         do {
             // The only step the parent has to wait for. Everything after this
@@ -487,7 +521,6 @@ struct CaptureFlowView: View {
             now = startedAt
             isCapturing = false
             cameraService.stop()
-            showCaptureFlash()
 
             withAnimation(.easeInOut(duration: 0.3)) {
                 phase = .timer
@@ -534,7 +567,8 @@ struct CaptureFlowView: View {
             await LiveActivityService.start(startedAt: startedAt, endsAt: timerEnd, rounds: 1)
             await NotificationService.shared.requestPermissionAndSchedule(
                 momentID: moment.id,
-                endsAt: timerEnd
+                endsAt: timerEnd,
+                audioFileName: nil
             )
         } catch {
             // PRD §6.2: a failed save must not consume a use or leave a timer
@@ -603,7 +637,10 @@ struct CaptureFlowView: View {
             phase = .completion
         }
 
-        CompletionAlertService.shared.start()
+        let audioFileName = activeMomentID.flatMap { id in
+            moments.first(where: { $0.id == id })?.alarmRecordingFileName
+        }
+        CompletionAlertService.shared.start(audioFileName: audioFileName)
     }
 
     /// Runs another round on the same moment: same photo, no new capture, and
@@ -659,7 +696,8 @@ struct CaptureFlowView: View {
         Task {
             await NotificationService.shared.requestPermissionAndSchedule(
                 momentID: moment.id,
-                endsAt: timerEnd
+                endsAt: timerEnd,
+                audioFileName: moment.alarmRecordingFileName
             )
         }
     }
@@ -671,6 +709,28 @@ struct CaptureFlowView: View {
         capturedImage = nil
         withAnimation(.easeInOut(duration: 0.25)) {
             phase = .home
+        }
+    }
+
+    private func saveMomentVoice(fileName: String, duration: Double, bytes: Int) {
+        guard let activeMomentID,
+              let moment = moments.first(where: { $0.id == activeMomentID }) else { return }
+        if let previous = moment.alarmRecordingFileName, previous != fileName {
+            try? FileManager.default.removeItem(at: MomentVoiceStore.url(for: previous))
+        }
+        moment.alarmRecordingFileName = fileName
+        moment.audioDurationSeconds = duration
+        moment.audioByteCount = bytes
+        try? modelContext.save()
+
+        if let endsAt {
+            Task {
+                await NotificationService.shared.requestPermissionAndSchedule(
+                    momentID: moment.id,
+                    endsAt: endsAt,
+                    audioFileName: fileName
+                )
+            }
         }
     }
 }

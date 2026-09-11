@@ -3,23 +3,23 @@ import Vision
 
 /// Counts extended fingers in a camera frame using Vision's hand pose model.
 ///
-/// The count drives both the shutter and the timer length: showing five fingers
-/// starts a five minute moment, ten fingers starts ten.
+/// A stable five-finger reading drives the automatic shutter. The normal camera
+/// flow always starts one five-minute moment.
 struct HandPoseDetector: Sendable {
-    /// Fingers must stay at the same count for this many consecutive frames
-    /// before the reading is trusted, which keeps a hand moving into position
-    /// from firing the shutter early.
-    static let requiredStableFrames = 8
+    /// An open palm has to remain visible for roughly half a second before it
+    /// is trusted. This is deliberately conservative because a false capture
+    /// is more disruptive than asking the child to hold their hand still.
+    static let requiredStableFrames = 12
 
     /// Vision reports low-confidence joints for partially visible hands, so
     /// joints below this are treated as missing rather than folded.
-    private static let minimumJointConfidence: Float = 0.3
+    private static let minimumJointConfidence: Float = 0.55
 
-    /// Returns the number of extended fingers across every detected hand,
-    /// or nil when no hand is visible.
+    /// Returns five only for one confident, fully open palm. Partial hands and
+    /// uncertain frames return nil; they must never map to a timer duration.
     func fingerCount(in pixelBuffer: CVPixelBuffer, orientation: CGImagePropertyOrientation) -> Int? {
         let request = VNDetectHumanHandPoseRequest()
-        request.maximumHandCount = 2
+        request.maximumHandCount = 1
 
         let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: orientation, options: [:])
 
@@ -29,45 +29,44 @@ struct HandPoseDetector: Sendable {
             return nil
         }
 
-        guard let observations = request.results, !observations.isEmpty else {
+        guard let observation = request.results?.first else {
             return nil
         }
 
-        let total = observations.reduce(0) { partial, observation in
-            partial + Self.extendedFingerCount(in: observation)
-        }
-
-        return total > 0 ? total : nil
+        return Self.isOpenPalm(observation) ? CaptureRules.defaultMinutes : nil
     }
 
     /// A finger is extended when its tip sits farther from the wrist than the
     /// joint below it, which holds regardless of hand rotation or distance.
-    private static func extendedFingerCount(in observation: VNHumanHandPoseObservation) -> Int {
+    private static func isOpenPalm(_ observation: VNHumanHandPoseObservation) -> Bool {
         guard let wrist = try? observation.recognizedPoint(.wrist),
               wrist.confidence >= minimumJointConfidence else {
-            return 0
+            return false
         }
 
-        let fingers: [(tip: VNHumanHandPoseObservation.JointName, pip: VNHumanHandPoseObservation.JointName)] = [
-            (.thumbTip, .thumbIP),
-            (.indexTip, .indexPIP),
-            (.middleTip, .middlePIP),
-            (.ringTip, .ringPIP),
-            (.littleTip, .littlePIP)
+        // The thumb swings more sideways than the other fingers, so it gets a
+        // slightly gentler distance threshold. Every finger still has to be
+        // longer than its joint below it, with a safety margin for jitter.
+        let fingers: [(tip: VNHumanHandPoseObservation.JointName, pip: VNHumanHandPoseObservation.JointName, extensionRatio: CGFloat)] = [
+            (.thumbTip, .thumbIP, 1.04),
+            (.indexTip, .indexPIP, 1.13),
+            (.middleTip, .middlePIP, 1.13),
+            (.ringTip, .ringPIP, 1.13),
+            (.littleTip, .littlePIP, 1.13)
         ]
 
-        return fingers.reduce(0) { count, finger in
+        return fingers.allSatisfy { finger in
             guard let tip = try? observation.recognizedPoint(finger.tip),
                   let pip = try? observation.recognizedPoint(finger.pip),
                   tip.confidence >= minimumJointConfidence,
                   pip.confidence >= minimumJointConfidence else {
-                return count
+                return false
             }
 
             let tipDistance = distance(from: wrist.location, to: tip.location)
             let pipDistance = distance(from: wrist.location, to: pip.location)
 
-            return tipDistance > pipDistance ? count + 1 : count
+            return tipDistance > pipDistance * finger.extensionRatio
         }
     }
 

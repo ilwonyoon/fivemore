@@ -9,7 +9,7 @@ final class NotificationService {
 
     private init() {}
 
-    func requestPermissionAndSchedule(momentID: UUID, endsAt: Date) async {
+    func requestPermissionAndSchedule(momentID: UUID, endsAt: Date, audioFileName: String? = nil) async {
         let settings = await center.notificationSettings()
         let isAuthorized: Bool
 
@@ -36,7 +36,7 @@ final class NotificationService {
             let content = UNMutableNotificationContent()
             content.title = "Time’s up"
             content.body = "That’s five. Your moment is saved."
-            content.sound = .default
+            content.sound = Self.alarmSound(momentVoiceFileName: audioFileName)
             content.interruptionLevel = .timeSensitive
 
             let trigger = UNTimeIntervalNotificationTrigger(
@@ -61,6 +61,27 @@ final class NotificationService {
         center.removeDeliveredNotifications(withIdentifiers: identifiers)
     }
 
+    /// The user's picked alarm as a notification sound. Presets ship in the
+    /// bundle and the recording plays from Library/Sounds — the two places
+    /// iOS looks. Anything missing falls back to the default tone.
+    private static func alarmSound(momentVoiceFileName: String?) -> UNNotificationSound {
+        if let momentVoiceFileName,
+           FileManager.default.fileExists(atPath: MomentVoiceStore.url(for: momentVoiceFileName).path) {
+            return UNNotificationSound(named: UNNotificationSoundName(momentVoiceFileName))
+        }
+        switch AlarmSound.currentResolved() {
+        case .recording(let fileName):
+            return UNNotificationSound(named: UNNotificationSoundName(fileName))
+        case .preset(let name):
+            guard let file = AlarmSound.bundledFileName(forPreset: name) else {
+                return UNNotificationSound.default
+            }
+            return UNNotificationSound(named: UNNotificationSoundName(file))
+        case .system:
+            return UNNotificationSound.default
+        }
+    }
+
     /// How many spaced repeats to schedule for a completion the user has not
     /// come back to yet.
     private static let nudgeCount = 4
@@ -70,4 +91,3 @@ final class NotificationService {
         "five-more.timer.\(momentID.uuidString).\(index)"
     }
 }
-

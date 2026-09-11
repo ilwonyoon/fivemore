@@ -25,12 +25,13 @@ targets:
         PRODUCT_NAME: FiveMore
         PRODUCT_MODULE_NAME: FiveMore
         MARKETING_VERSION: 0.1.0
-        CURRENT_PROJECT_VERSION: 1
+        CURRENT_PROJECT_VERSION: 4
         TARGETED_DEVICE_FAMILY: 1
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Five More Minutes
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.lifestyle
         INFOPLIST_KEY_NSCameraUsageDescription: Take a photo to begin a five-minute moment.
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Record your own alarm sound for when the moment ends.
         INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: Save each 5 More photo to your photo library.
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: Show the 5 More photos you have saved in Memories.
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
@@ -66,7 +67,7 @@ targets:
         INFOPLIST_FILE: FiveMoreWidgets/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: 5 More
         MARKETING_VERSION: 0.1.0
-        CURRENT_PROJECT_VERSION: 1
+        CURRENT_PROJECT_VERSION: 4
         TARGETED_DEVICE_FAMILY: 1
         SKIP_INSTALL: YES
 

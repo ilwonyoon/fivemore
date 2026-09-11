@@ -19,14 +19,14 @@ struct StartMomentIntent: AppIntent {
 
     @Parameter(
         title: "Minutes",
-        description: "How long the moment should run. Leave empty to decide with your fingers.",
+        description: "How long the moment should run. Leave empty to use five minutes.",
         inclusiveRange: (1, 60)
     )
     var minutes: Int?
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        LaunchRequest.shared.requestMoment(minutes: minutes)
+        LaunchRequest.shared.requestMoment(minutes: minutes ?? 5)
         return .result()
     }
 }

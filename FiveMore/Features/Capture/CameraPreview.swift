@@ -17,9 +17,10 @@ struct CameraPreview: View {
             )
 
             VStack(spacing: 16) {
-                Image(systemName: "hand.raised.fill")
-                    .font(.system(size: 112, weight: .regular))
-                    .foregroundStyle(Color(red: 0.93, green: 0.57, blue: 0.42))
+                Image("SymbolFiveHand")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 122, height: 122)
                     .shadow(color: .white.opacity(0.35), radius: 8, y: 4)
 
                 Text("Camera preview")
@@ -37,7 +38,16 @@ struct CameraPreview: View {
             CameraPreviewRepresentable(session: session)
                 .accessibilityLabel("Live camera preview")
         } else {
-            ContentUnavailableView("Camera unavailable", systemImage: "camera.fill")
+            VStack(spacing: 12) {
+                Image("IconCamera")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 48, height: 48)
+                Text("Camera unavailable")
+                    .font(.headline)
+            }
+            .foregroundStyle(SRColor.muted)
         }
 #endif
     }

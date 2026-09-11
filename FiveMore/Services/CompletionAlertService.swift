@@ -10,17 +10,15 @@ import UIKit
 /// "until you turn it off" alert, the app repeats a short tone on a timer for
 /// as long as the completion screen is showing.
 ///
-/// The tone is the bundled `CompletionChime` asset when present, and falls back
-/// to a system alert tone otherwise, so the flow works before custom audio is
-/// added.
+/// The clip is the user's pick — own recording, bundled preset, or system
+/// tone — resolved fresh on every start so a new choice takes effect
+/// immediately. It loops for as long as the completion screen is showing:
+///
+/// - a short chime repeats every few seconds;
+/// - a longer recording replays end to end with a breath between loops.
 @MainActor
 final class CompletionAlertService {
     static let shared = CompletionAlertService()
-
-    /// Drop a short chime at `FiveMore/Resources/CompletionChime.caf` (or .m4a
-    /// / .wav) and it is picked up automatically on the next build.
-    private static let customSoundName = "CompletionChime"
-    private static let customSoundExtensions = ["caf", "m4a", "wav", "mp3"]
 
     /// System "new mail" chime: short, clear, and not siren-like.
     private static let fallbackToneID: SystemSoundID = 1005
@@ -30,9 +28,7 @@ final class CompletionAlertService {
     private var player: AVAudioPlayer?
     private let haptics = UINotificationFeedbackGenerator()
 
-    private init() {
-        player = Self.makePlayer()
-    }
+    private init() {}
 
     var isPlaying: Bool {
         repeatTask != nil
@@ -45,11 +41,12 @@ final class CompletionAlertService {
     }
 
     /// Starts the repeating completion alert. Safe to call more than once.
-    func start() {
+    func start(audioFileName: String? = nil) {
         guard repeatTask == nil else { return }
 
         configureAudioSession()
         haptics.prepare()
+        player = Self.makePlayer(momentVoiceFileName: audioFileName)
         player?.prepareToPlay()
 
         repeatTask = Task { [weak self] in
@@ -57,8 +54,11 @@ final class CompletionAlertService {
                 guard let self else { return }
                 self.playOnce()
 
+                // A long recording replays end to end; a short chime keeps
+                // the classic few-seconds pulse.
+                let gap = max(self.repeatInterval, (self.player?.duration ?? 0) + 1.0)
                 do {
-                    try await Task.sleep(for: .seconds(self.repeatInterval))
+                    try await Task.sleep(for: .seconds(gap))
                 } catch {
                     return
                 }
@@ -85,22 +85,31 @@ final class CompletionAlertService {
         haptics.notificationOccurred(.success)
     }
 
-    private static func makePlayer() -> AVAudioPlayer? {
-        for ext in customSoundExtensions {
-            guard let url = Bundle.main.url(forResource: customSoundName, withExtension: ext) else {
-                continue
-            }
-
-            do {
-                let player = try AVAudioPlayer(contentsOf: url)
-                player.volume = 1
-                return player
-            } catch {
-                return nil
+    private static func makePlayer(momentVoiceFileName: String?) -> AVAudioPlayer? {
+        let url: URL?
+        if let momentVoiceFileName,
+           FileManager.default.fileExists(atPath: MomentVoiceStore.url(for: momentVoiceFileName).path) {
+            url = MomentVoiceStore.url(for: momentVoiceFileName)
+        } else {
+            switch AlarmSound.currentResolved() {
+        case .recording(let fileName):
+            let fileURL = AlarmSound.url(forRecording: fileName)
+            url = FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
+        case .preset(let name):
+            url = AlarmSound.bundledURL(forPreset: name)
+        case .system:
+            url = nil
             }
         }
 
-        return nil
+        guard let url else { return nil }
+        do {
+            let player = try AVAudioPlayer(contentsOf: url)
+            player.volume = 1
+            return player
+        } catch {
+            return nil
+        }
     }
 
     /// Uses the ambient category so the alert respects the ringer switch and

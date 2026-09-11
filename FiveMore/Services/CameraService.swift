@@ -37,16 +37,15 @@ final class CameraService: ObservableObject {
 
     @Published private(set) var state: State = .idle
 
-    /// Fingers currently held up, once the reading has settled. Nil when no
-    /// hand is visible.
+    /// Five only after a confident open palm has settled. Nil for partial,
+    /// folded or uncertain hands.
     @Published private(set) var stableFingerCount: Int?
 
     /// Progress toward a stable reading, for the on-screen hold indicator.
     @Published private(set) var detectionProgress: Double = 0
 
-    /// The most recent per-frame reading, before stabilisation. Used when the
-    /// shutter is pressed manually so a hand that has not settled yet still
-    /// sets the length.
+    /// The latest open-palm reading before stabilisation. It exists only to
+    /// drive the on-screen "hold steady" guide; manual capture is always five.
     @Published private(set) var latestFingerCount: Int?
 
 #if targetEnvironment(simulator)

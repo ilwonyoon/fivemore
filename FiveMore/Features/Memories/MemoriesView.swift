@@ -22,7 +22,15 @@ struct MemoriesView: View {
 
                 if moments.isEmpty {
                     ContentUnavailableView {
-                        Label("No moments yet", systemImage: "hand.raised")
+                        VStack(spacing: 8) {
+                            Image("SymbolFiveHand")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 92, height: 92)
+                                .accessibilityHidden(true)
+
+                            Text("No moments yet")
+                        }
                     } description: {
                         Text("Your 5 More photos will collect here.")
                     }
@@ -53,7 +61,7 @@ struct MemoriesView: View {
 
     private var permissionView: some View {
         ContentUnavailableView {
-            Label("See your saved moments", systemImage: "photo.on.rectangle.angled")
+            Label("See your saved moments", image: "IconMemories")
         } description: {
             Text("Allow photo access to display the 5 More photos already saved in your library.")
         } actions: {
@@ -84,8 +92,11 @@ private struct MomentThumbnail: View {
                         .resizable()
                         .scaledToFill()
                 } else {
-                    Image(systemName: "photo")
-                        .font(.title2)
+                    Image("IconMemories")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 28, height: 28)
                         .foregroundStyle(SRColor.muted)
                 }
             }
@@ -113,4 +124,3 @@ private struct MomentThumbnail: View {
     MemoriesView()
         .modelContainer(for: Moment.self, inMemory: true)
 }
-

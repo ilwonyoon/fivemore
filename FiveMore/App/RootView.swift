@@ -13,13 +13,29 @@ struct RootView: View {
         TabView(selection: $selection) {
             CaptureFlowView()
                 .tabItem {
-                    Label("Home", systemImage: "house")
+                    Label {
+                        Text("Home")
+                    } icon: {
+                        Image("IconHome")
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 22, height: 22)
+                    }
                 }
                 .tag(Tab.home)
 
             MemoriesView()
                 .tabItem {
-                    Label("Memories", systemImage: "photo.on.rectangle.angled")
+                    Label {
+                        Text("Memories")
+                    } icon: {
+                        Image("IconMemories")
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 22, height: 22)
+                    }
                 }
                 .tag(Tab.memories)
         }
@@ -37,4 +53,3 @@ struct RootView: View {
     RootView()
         .modelContainer(for: Moment.self, inMemory: true)
 }
-

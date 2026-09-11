@@ -16,9 +16,16 @@ enum CapturePhase: Equatable {
 /// rules where a mistake charges a parent for something they did not agree to,
 /// so they are kept out of the view deliberately.
 enum CaptureRules {
-    /// V1 runs one moment at a time; a length is only ever set by fingers or by
-    /// the shutter fallback.
+    /// The normal camera flow is always a five-minute moment.
     static let defaultMinutes = 5
+
+    /// Automatic capture is intentionally narrower than "any detected
+    /// fingers": only a verified, stable open palm can start a moment.
+    /// This keeps a partial hand or a noisy Vision reading from surprising a
+    /// parent with an unintended timer.
+    static func shouldAutoCapture(stableFingerCount: Int?) -> Bool {
+        stableFingerCount == defaultMinutes
+    }
 
     /// A free use is consumed only when a photo was saved AND a timer started,
     /// and only while the unlock has not been purchased.
@@ -32,17 +39,6 @@ enum CaptureRules {
     /// A repeat never consumes a use — the moment was already paid for.
     static func shouldConsumeFreeUseOnRepeat() -> Bool {
         false
-    }
-
-    /// How long a new moment should run, given what the camera currently sees.
-    ///
-    /// The live per-frame reading wins over the stabilised one so that pressing
-    /// the shutter before the reading settles still counts fingers.
-    static func minutes(liveFingerCount: Int?, stableFingerCount: Int?) -> Int {
-        guard let fingers = liveFingerCount ?? stableFingerCount, fingers > 0 else {
-            return defaultMinutes
-        }
-        return fingers
     }
 
     /// Whether the camera may be opened, or the paywall must be shown instead.

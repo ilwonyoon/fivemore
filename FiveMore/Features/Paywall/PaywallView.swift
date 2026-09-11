@@ -13,19 +13,15 @@ struct PaywallView: View {
             VStack(spacing: 24) {
                 Spacer()
 
-                ZStack {
-                    Circle()
-                        .fill(SRColor.yellow.opacity(0.26))
-                        .frame(width: 138, height: 138)
-
-                    Image(systemName: "hand.raised.fill")
-                        .font(.system(size: 78, weight: .regular))
-                        .foregroundStyle(Color(red: 0.93, green: 0.57, blue: 0.42))
-                }
+                Image("SymbolFiveHand")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 138, height: 138)
+                    .accessibilityHidden(true)
 
                 VStack(spacing: 10) {
                     Text("Your first \(TrialUsageStore.freeLimit) moments\nare saved.")
-                        .font(.system(size: 34, weight: .black, design: .rounded))
+                        .font(SRTypography.paywallTitle)
                         .multilineTextAlignment(.center)
                         .foregroundStyle(SRColor.charcoal)
 
@@ -76,8 +72,7 @@ struct PaywallView: View {
                     VStack(spacing: 3) {
                         Text("One-time purchase. No subscription.")
 
-                        Label("Shared with your Family Sharing group", systemImage: "person.2.fill")
-                            .labelStyle(.titleAndIcon)
+                        Text("Shared with your Family Sharing group")
                     }
                     .font(.caption)
                     .multilineTextAlignment(.center)
@@ -139,4 +134,3 @@ struct PaywallView: View {
         )
     }
 }
-

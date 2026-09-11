@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-11",
+  "styleSystem": "warm paper, charcoal wax-crayon linework, peach clay-watercolor hand, transparent PNG assets unless noted",
+  "assets": [
+    {
+      "name": "AppIcon",
+      "kind": "app-icon",
+      "imageset": "AppIcon.appiconset",
+      "source": "art/generated/app-icon/app-icon-five-hand-v3-source.png",
+      "canvas": "1024x1024",
+      "transparent": false,
+      "status": "current",
+      "prompt": "Cute five-finger palm, warm peach clay-crayon form, cream background, no text."
+    },
+    {
+      "name": "BrandWordmark",
+      "kind": "wordmark",
+      "imageset": "BrandWordmark.imageset",
+      "source": "art/generated/brand/wordmark-transparent-v4.png",
+      "transparent": true,
+      "status": "replace-planned",
+      "replacement": "Test SymbolFiveHand at 28pt beside text ‘Five More Minutes’ before creating a new logo asset.",
+      "prompt": "Handwritten charcoal wordmark only if the large centered title remains necessary."
+    },
+    {
+      "name": "SymbolFiveHand",
+      "kind": "brand-mark",
+      "imageset": "SymbolFiveHand.imageset",
+      "source": "art/generated/symbols/hand-five-v1.png",
+      "canvas": "140x140pt @3x",
+      "transparent": true,
+      "status": "current-reuse",
+      "prompt": "Friendly five-finger peach hand, tactile clay-watercolor, transparent background."
+    },
+    {
+      "name": "HeroSpace",
+      "kind": "home-hero",
+      "imageset": "HeroSpace.imageset",
+      "source": "art/generated/brand/hero-space-transparent-v2.png",
+      "transparent": true,
+      "status": "current",
+      "prompt": "Childlike crayon rocket and stars, blue crayon border, transparent background."
+    },
+    {
+      "name": "IconCamera",
+      "kind": "action-icon",
+      "imageset": "IconCamera.imageset",
+      "source": "art/generated/icons/camera-transparent-v3.png",
+      "template": true,
+      "targetDisplay": "44pt CTA, 37pt Settings",
+      "status": "current",
+      "prompt": "Charcoal wax-crayon camera outline, minimal, transparent background."
+    },
+    {
+      "name": "IconHome",
+      "kind": "tab-icon",
+      "imageset": "IconHome.imageset",
+      "source": "art/generated/icons/home-transparent-v2.png",
+      "template": true,
+      "targetDisplay": "24pt visual artwork within a 40pt canvas",
+      "status": "scale-down",
+      "prompt": "Charcoal/orange wax-crayon home outline with 30 percent transparent breathing room around the artwork."
+    },
+    {
+      "name": "IconMemories",
+      "kind": "tab-icon",
+      "imageset": "IconMemories.imageset",
+      "source": "art/generated/icons/memories-transparent-v3.png",
+      "template": true,
+      "targetDisplay": "24pt visual artwork within a 40pt canvas",
+      "status": "scale-down",
+      "prompt": "Charcoal wax-crayon stacked-photo outline with 30 percent transparent breathing room around the artwork."
+    },
+    {
+      "name": "IconSettings",
+      "kind": "secondary-icon",
+      "imageset": "IconSettings.imageset",
+      "source": "art/generated/icons/settings-transparent-v2.png",
+      "template": true,
+      "targetDisplay": "22-37pt",
+      "status": "current",
+      "prompt": "Charcoal wax-crayon gear, low-detail and friendly, transparent background."
+    },
+    {
+      "name": "IconTrash",
+      "kind": "destructive-icon",
+      "imageset": "IconTrash.imageset",
+      "source": "art/generated/icons/icon-trash-v1-transparent.png",
+      "template": true,
+      "targetDisplay": "22-23pt",
+      "status": "current",
+      "prompt": "Charcoal wax-crayon wastebasket, transparent background, no fill."
+    },
+    {
+      "name": "SymbolCompletion",
+      "kind": "completion-mark",
+      "imageset": "SymbolCompletion.imageset",
+      "source": "art/generated/symbols/completion-signal-v1.png",
+      "transparent": true,
+      "targetDisplay": "68-82pt",
+      "status": "current",
+      "prompt": "Warm yellow clay-crayon bell, transparent background, soft and celebratory."
+    }
+  ]
+}
